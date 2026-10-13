@@ -92,7 +92,7 @@ c_latch: ldax	clkcnt			; the period P, kept as lP (only a hit reads it)
 	log	1.0, -0.25
 	wrax	t, 0
 	ldax	lP			; the grain: one clock period, capped at the 0.5 s loop
-	exp	-0.5, 0			; (EXP saturates at 1: the cap)
+	exp	-0.49853515625, 0	; (EXP saturates at 1: the cap) 3 x 2^-10 short: the read never passes the write
 	wrax	nPa, 0
 	ldax	kk
 	log	-1.0, 0

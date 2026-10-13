@@ -96,7 +96,7 @@ i_run:
 	skp	neg, h_fit
 	clr				; T > 0.5 s: the grain is capped at the 0.5 s loop
 h_fit:	wrax	lq, 1.0
-	exp	-0.4999389648, 0	; -grain (2 samples under the 0.5 s loop, so its recording ends before age wraps)
+	exp	-0.49920654296875, 0	; -grain, 3 x 2^-11 short of the stretch's (and of the 0.5 s loop): the read never passes the write
 	wrax	nPa, 0
 	ldax	kk
 	log	-1.0, 0

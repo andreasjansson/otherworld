@@ -17,6 +17,9 @@
   --tall: "Six Caps", "Archivo", Impact, sans-serif;
   --sans: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --bar-h: 56px;
+  /* phosphor burn: an old VGA screen left on too long, the glow smeared along the scan lines */
+  --burn: 0 0 1px rgba(198, 240, 58, 0.6), 3px 0 3px rgba(198, 240, 58, 0.32), -3px 0 3px rgba(198, 240, 58, 0.32),
+          9px 0 7px rgba(198, 240, 58, 0.16), -9px 0 7px rgba(198, 240, 58, 0.16), 20px 0 14px rgba(198, 240, 58, 0.07), -20px 0 14px rgba(198, 240, 58, 0.07);
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -51,7 +54,7 @@ button { font: inherit; color: inherit; }
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .band { color: var(--acid); border-block: 1px solid var(--rule); }
 /* the letters spread across main's column, as the footer's spread across its width */
-.band p { max-width: 1320px; margin: 0 auto; padding: 9px clamp(16px, 5vw, 64px) 8px; display: flex; justify-content: space-between; white-space: nowrap; overflow: hidden;
+.band p { max-width: 1320px; margin: 0 auto; padding: 9px clamp(16px, 5vw, 64px) 8px; display: flex; justify-content: space-between; white-space: nowrap; overflow: hidden; text-shadow: var(--burn);
   font: 900 clamp(12px, 1.6vw, 16px)/1.2 var(--sans); font-stretch: 125%; text-transform: uppercase; }
 
 /* ---- the effects, as a track list */
@@ -138,7 +141,7 @@ main { max-width: 1320px; margin: 0 auto; padding-inline: clamp(16px, 5vw, 64px)
 .foot .title b { display: block; font: 900 clamp(36px, 7vw, 92px)/0.95 var(--sans); font-stretch: 125%; letter-spacing: 0.1em; text-transform: uppercase; color: var(--acid); }
 /* VOL. 1 under the title, a little larger than the header's VOL. 1 (.vol): 40 px at full width */
 .foot .title b.v { margin-top: clamp(8px, 1.2vw, 14px); font-size: clamp(21px, 3.06vw, 40px); line-height: 1; letter-spacing: 0.32em; }
-.foot .spaced { position: absolute; left: clamp(16px, 5vw, 64px); right: clamp(16px, 5vw, 64px); bottom: 18px; display: flex; justify-content: space-between;
+.foot .spaced { position: absolute; left: clamp(16px, 5vw, 64px); right: clamp(16px, 5vw, 64px); bottom: 18px; display: flex; justify-content: space-between; text-shadow: var(--burn);
   font: 900 clamp(14px, 2vw, 22px)/1 var(--sans); font-stretch: 125%; text-transform: uppercase; color: var(--acid); pointer-events: none; }
 .credits { max-width: 1320px; margin: 0 auto; padding: 16px clamp(16px, 5vw, 64px) 22px; display: flex; flex-wrap: wrap; gap: 8px 26px; color: var(--fg-soft); }
 .credits a { color: var(--fg); }

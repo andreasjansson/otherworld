@@ -98,7 +98,8 @@
   },
   {
    "id": "179_numbers_station_clk",
-   "category": "distortion"
+   "category": "distortion",
+   "clock": "x4"
   },
   {
    "id": "103_pitch_locked_decimator",

@@ -21,7 +21,7 @@
 ; @pots Pack | Snow | Fall
 ; @render 0.5714, 0.89, 0.2615
 ; @time POT0 0.2 0.9 lin
-; @components onset-driven freeze-loop accumulation, octave-up read heads, threshold-triggered reverse octave cascade, one avalanche per pack, stage-by-stage in-loop requantization to 1 bit, crescendo, two-allpass loop reverb with a modulated feedback tap that grows from a room to a hall over the slide, ducks it, holds and is cut at the next onset, feed-forward peak ceiling
+; @components onset-driven freeze-loop accumulation, octave-up read heads, threshold-triggered reverse octave cascade, one avalanche per pack, stage-by-stage in-loop requantization to 1 bit, crescendo, two-allpass loop reverb with a feedback tap that grows from a room to a hall over the slide, ducks it, holds and is cut at the next onset, feed-forward peak ceiling
 ;
 ; Otherworld vol. 1 (github.com/andreasjansson/otherworld), MIT licence.
 
@@ -48,13 +48,9 @@ equ	sk	reg14		; 2^-k while crushing
 equ	t	reg15		; note hold: 1 on a note, decays (tau 0.25 s)
 equ	k9	reg16		; 2^-9, the address constant (set by the reset)
 
-	wlds	sin0, 56, 64		; reverb tap +-16 samples at 2.2 Hz (read through CHO only)
-				; (reloading the rate and range registers every pass is harmless)
 ; ---- pack length; the pack loop write (state from the last sample); the ceiling and duck:
 ;      no read of the pack can leave the effect louder than 0.75 x 0.261 x 3.96 = 0.775
-	ldax	pot0
-	sof	0.7, 0.2		; 0.2 .. 0.9 s
-	wrax	Lp, 1.0
+	ldax	Lp			; the pack length, taken from Pack while the pack is wiped
 	wrax	addr_ptr, 0
 	rmpa	-0.5			; - old / 2
 	rdax	hpf, 1.0
@@ -97,7 +93,10 @@ equ	k9	reg16		; 2^-9, the address constant (set by the reset)
 	wrax	sc, -0.001953125	; ACC = 2^-9
 	wrax	k9, 0
 clearing:
-	wrax	env, 0			; clears ACC; env takes the tiny wipe count, about 0 at the end
+	ldax	pot0			; Pack is read only here, while the pack is wiped (and on the first sample):
+	sof	0.7, 0.2		; a moving Pack would splice the frozen loop on every turn
+	wrax	Lp, 0			; 0.2 .. 0.9 s
+	wrax	env, 0
 	wrax	gt, 0			; the dry stops with the slide (3 ms)
 	wrax	e, 0			; deposits fade in again when the next pack starts,
 	wrax	t, 0			; and the cut waits for a new note
@@ -177,8 +176,7 @@ b_ok:	wrax	addr_ptr, 1.0
 	wrax	addr_ptr, 0
 	rmpa	1.99
 	mulx	w
-	cho	rda, sin0, sin|reg|compc, rlp+40	; + reverb: a moving, interpolated tap
-	cho	rda, sin0, sin, rlp+41
+	rda	rlp+40, 1.0		; + reverb
 	sof	1.99, 0			; make-up for both
 	wrax	dacl, 0.505		; reverb in: the L output, so its tap is the feedback (loop gain 1.005 G)
 	rda	ap1#, -0.65		; two allpasses (-k: their residue rounds to exactly 0)

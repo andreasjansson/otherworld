@@ -1,0 +1,6 @@
+build/
+.DS_Store
+__pycache__/
+# written by build.py (the Pages workflow runs it)
+site/index.html
+site/fx/

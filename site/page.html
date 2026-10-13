@@ -1,0 +1,661 @@
+<title>Otherworld vol. 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,400..900&family=Six+Caps&display=swap">
+<style>
+/* Layout: Bit-Max Galaxy, made quiet. Black sky, extended acid capitals, a framed download box,
+   faint stars and slow wireframe planets; effects between dotted acid rules like a track list;
+   the player is a strip along the bottom. One dark look, by choice. */
+:root {
+  --sky: #050507; --sky-hi: #101016;
+  --fg: #eef5d6; --fg-soft: #8e9478;
+  --acid: #c6f03a; --planet: #e4405f;
+  --rule: rgba(198, 240, 58, 0.55);
+  --k-body: #0d0d12; --k-line: #eef5d6; --k-track: rgba(238, 245, 214, 0.25);
+  --chip-line: #2c2f22; --stripe: rgba(228, 64, 95, 0.16);
+  --pam-glass: #2a191b; --pam-text: #f25956;            /* Pamela's PRO Workout screen, sampled from ALM's photo */
+  --tall: "Six Caps", "Archivo", Impact, sans-serif;
+  --sans: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --bar-h: 56px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--sky); color: var(--fg); }
+body { margin: 0; font: 500 15px/1.4 var(--sans); text-transform: uppercase; padding-bottom: calc(var(--bar-h) + env(safe-area-inset-bottom, 0px)); overflow-x: hidden; }
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px dashed var(--acid); outline-offset: 3px; }
+.tracked { font: 700 11px/1.2 var(--sans); letter-spacing: 0.32em; text-transform: uppercase; }
+
+/* ---- masthead */
+.mast { position: relative; overflow: hidden; background: var(--sky) url(header-4d.webp) center / cover no-repeat; }
+/* the header: a flight through a 4D world (tools/header4d), played through a deliberately glitched
+   MPEG-4 decoder in wasm (tools/mpeg4-glitch) so it smears and melts; the poster still shows until
+   the first frame, and stays if the decoder can't run */
+.mast canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; }
+.mast-in { position: relative; max-width: 1320px; margin: 0 auto; min-height: clamp(320px, 40vw, 500px);
+  padding: clamp(24px, 5vw, 56px) clamp(16px, 5vw, 64px) clamp(26px, 4vw, 44px);
+  display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 22px 36px; }
+.logo { position: relative; margin: 0; min-width: 0; font: 900 clamp(48px, 9.5vw, 132px)/0.92 var(--sans); font-stretch: 125%; letter-spacing: 0.1em;
+  color: var(--acid); text-transform: uppercase; }
+.logo .w2 { display: block; }
+/* OTHER is spaced out to WORLD's width, so both lines meet the same left and right edges (ink measured
+   in Archivo 900 expanded: O sits 0.04em right of W, hence the nudge) */
+.logo .w1 { display: block; letter-spacing: 0.1533em; margin-left: -0.04em; }
+.title-block { min-width: 0; }
+.vol { margin: clamp(8px, 1.2vw, 14px) 0 0; font: 900 clamp(18px, 2.6vw, 34px)/1 var(--sans); font-stretch: 125%; letter-spacing: 0.32em; color: var(--acid); text-transform: uppercase; }
+/* the download button: solid green with its letters cut out (an SVG mask), so the video shows through them */
+.get { position: relative; display: block; flex: none; width: calc(clamp(64px, 8vw, 104px) * 3.17); text-decoration: none; line-height: 0; }
+.get svg { display: block; width: 100%; height: auto; transition: filter 0.12s; }
+.get:hover .get-ink { filter: brightness(1.08); }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.band { color: var(--acid); border-block: 1px solid var(--rule); }
+.band p { max-width: 1320px; margin: 0 auto; padding: 9px clamp(16px, 5vw, 64px) 8px; white-space: nowrap; overflow: hidden;
+  font: 900 clamp(12px, 1.6vw, 16px)/1.2 var(--sans); font-stretch: 125%; letter-spacing: 0.5em; text-transform: uppercase; }
+
+/* ---- the effects, as a track list */
+main { max-width: 1320px; margin: 0 auto; padding-inline: clamp(16px, 5vw, 64px); }
+.cat { padding-block: clamp(40px, 6vw, 72px) 0; }
+.cat h2 { margin: 0; font: 900 clamp(34px, 6vw, 76px)/0.9 var(--sans); font-stretch: 125%; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--acid); text-shadow: 0 0 24px rgba(198, 240, 58, 0.25); }
+.cat hr { height: 0; margin: 18px 0 6px; border: 0; border-top: 3px solid var(--rule); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); column-gap: clamp(20px, 3vw, 40px); }
+.fx { position: relative; display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "play name leds" "knobs knobs knobs" "extra extra dl";
+  align-items: center; gap: 12px 14px; padding: 18px 4px 10px; min-width: 0; border-bottom: 2px dotted var(--rule); isolation: isolate; }
+.fx::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0; transition: opacity 0.4s;
+  background: repeating-linear-gradient(90deg, var(--stripe) 0 2px, transparent 2px 5px); }
+.fx.on::before { opacity: 1; }
+.fx h3 { grid-area: name; margin: 0; min-width: 0; font: 800 17px/1.1 var(--sans); font-stretch: 125%; letter-spacing: 0.06em; text-transform: uppercase; overflow-wrap: anywhere;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.fx h3 .clk { display: inline-block; margin-left: 0; padding: 3px 4px 2px; vertical-align: 3px; border: 2px solid currentColor;
+  font: 900 9px/1 var(--sans); font-stretch: 125%; letter-spacing: 0.12em; }
+.play { grid-area: play; width: 44px; height: 44px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center;
+  background: var(--acid); color: var(--sky); transition: transform 0.12s, background 0.2s; }
+.play:hover { transform: scale(1.07); }
+.play svg { width: 18px; height: 18px; fill: currentColor; }
+.fx.on .play { background: #fbfbf6; color: #121114; }
+.play.busy svg { animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* the module's LEDs: top row = bank, bottom row = effect (1-4 that LED lit, 5-8 that LED dark, the rest lit) */
+.leds { grid-area: leds; display: grid; grid-template-columns: repeat(4, 8px); gap: 5px 6px; padding: 6px 7px; border-radius: 2px; background: #0c0b0e;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.led { width: 8px; height: 8px; border-radius: 50%; background: #3b3830; }
+.led.lit { background: #ffffff; box-shadow: 0 0 5px rgba(255, 255, 255, 0.9); }
+
+.knobs { grid-area: knobs; display: flex; flex-wrap: wrap; gap: 6px 10px; min-width: 0; }
+.knob { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 58px; min-width: 0; touch-action: none; cursor: ns-resize; user-select: none; }
+.knob svg { width: 50px; height: 50px; display: block; }
+.knob .lab, .pam .lab { font: 800 10px/1 var(--sans); letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg); white-space: nowrap; }
+.knob .fn { font: 600 9px/1.1 var(--sans); letter-spacing: 0.1em; color: var(--fg-soft); max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.k-body { fill: var(--k-body); stroke: var(--k-line); }
+.k-ptr { stroke: var(--k-line); }
+.k-track { stroke: var(--k-track); }
+.k-val { stroke: var(--acid); }
+.knob.wet .k-val { stroke: var(--fg); }
+.dl { grid-area: dl; justify-self: end; font: 700 10px/1 var(--sans); letter-spacing: 0.28em; text-transform: uppercase; text-decoration: none;
+  padding: 4px 0 4px 6px; color: var(--fg-soft); }
+.dl:hover { color: var(--acid); }
+
+/* clocked effects: Pamela's PRO Workout's screen and encoder in the knob row (the clock rate fed to input R), and the trigger note below */
+.extra { grid-area: extra; display: flex; align-items: center; min-width: 0; }
+.extra:empty { display: none; }
+.note { margin: 0; font: 700 10px/1.4 var(--sans); letter-spacing: 0.14em; color: var(--fg-soft); }
+.pam { display: flex; flex-direction: column; align-items: center; gap: 3px; user-select: none; cursor: pointer; }
+.pam .row { display: flex; align-items: center; height: 50px; }
+/* Pam's screen: the wine glass, no frame, smooth coral text with the OLED's slight glow, centred.
+   Pam's value font is a medium condensed grotesque whose 1 is a plain bar (x1 reads "xl") */
+.oled { flex: none; width: 60px; height: 36px; border-radius: 4px; background: var(--pam-glass);
+  display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.oled span { font: 500 24px/1 var(--sans); font-stretch: 84%; letter-spacing: 0.03em; color: var(--pam-text); text-transform: none;
+  text-shadow: 0 0 1.5px rgba(242, 89, 86, 0.6), 0 0 6px rgba(242, 89, 86, 0.28); transform: translateY(var(--pam-dy, 0px)); }
+.pam:focus-visible { outline: none; }
+.pam:focus-visible .oled { box-shadow: 0 0 0 2px rgba(242, 89, 86, 0.45); }
+
+/* clocked effects: the module's dry/wet as MIX, two faders, DRY and FX, crossfading (dry = 1 - fx), so it reads at a glance as all effect */
+.mix { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 58px; user-select: none; margin-left: auto; }   /* MIX and the clock sit at the right edge, in line with the LEDs */
+.mix .pair { display: flex; justify-content: center; gap: 6px; height: 50px; }
+.fader { width: 20px; height: 50px; touch-action: none; cursor: ns-resize; }
+.fader svg { width: 20px; height: 50px; display: block; overflow: visible; }
+.fader:focus-visible { outline: 1px solid var(--fg-soft); outline-offset: 2px; }
+.f-val { stroke: var(--fg); }
+.f-cap { fill: var(--k-body); stroke: var(--k-line); }
+.mix .lab { font: 800 10px/1 var(--sans); letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg); white-space: nowrap; }
+.mix .fns { display: flex; justify-content: center; gap: 6px; }
+.mix .fns span { width: 20px; text-align: center; font: 600 9px/1.1 var(--sans); letter-spacing: 0.06em; color: var(--fg-soft); }
+/* phones: the three CVs, MIX and the clock screen still share one row (down to a 360 px screen) */
+@media (max-width: 420px) {
+  .knobs { column-gap: 6px; }
+  .knob, .mix { width: 54px; }
+}
+
+/* ---- the foot */
+.foot { position: relative; height: clamp(250px, 34vw, 400px); margin-top: clamp(56px, 8vw, 96px); overflow: hidden; background: var(--sky); }
+.foot canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.foot .title { position: absolute; left: clamp(16px, 5vw, 64px); top: clamp(18px, 3vw, 34px); right: 16px; pointer-events: none; }
+.foot .title b { display: block; font: 900 clamp(36px, 7vw, 92px)/0.95 var(--sans); font-stretch: 125%; letter-spacing: 0.1em; text-transform: uppercase; color: var(--acid); }
+.foot .spaced { position: absolute; left: clamp(16px, 5vw, 64px); right: clamp(16px, 5vw, 64px); bottom: 18px; display: flex; justify-content: space-between;
+  font: 900 clamp(14px, 2vw, 22px)/1 var(--sans); font-stretch: 125%; text-transform: uppercase; color: var(--acid); pointer-events: none; }
+.credits { max-width: 1320px; margin: 0 auto; padding: 16px clamp(16px, 5vw, 64px) 22px; display: flex; flex-wrap: wrap; gap: 8px 26px; color: var(--fg-soft); }
+.credits a { color: var(--fg); }
+
+/* ---- the player strip */
+.bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; align-items: center; gap: 14px;
+  padding: 10px clamp(12px, 3vw, 28px) calc(10px + env(safe-area-inset-bottom, 0px)); background: #000; color: var(--fg); border-top: 1px solid var(--rule); }
+.bar .pp { flex: none; width: 50px; height: 50px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center; background: var(--acid); color: var(--sky); }
+.bar .pp svg { width: 20px; height: 20px; fill: currentColor; }
+.bar .pp:disabled { opacity: 0.3; cursor: default; }
+.now { flex: 1 1 0; min-width: 0; }
+.now b { display: block; font: 800 16px/1.15 var(--sans); font-stretch: 125%; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.now small { display: block; margin-top: 4px; color: var(--fg-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.loop-lab { flex: none; font: 900 12px/1 var(--sans); font-stretch: 125%; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fg); }
+.loops { flex: 1 1 auto; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
+.loops::-webkit-scrollbar { display: none; }
+.loops button { flex: none; min-width: 42px; padding: 8px 10px 7px; border: 1px solid var(--chip-line); background: transparent; cursor: pointer; color: var(--fg-soft);
+  font: 800 13px/1 var(--sans); font-stretch: 125%; letter-spacing: 0.08em; text-transform: uppercase; }
+.loops button:hover { border-color: var(--fg); color: var(--fg); }
+.loops button.sel { background: var(--acid); border-color: var(--acid); color: var(--sky); }
+.meter { flex: none; width: 60px; height: 34px; }
+.toast { position: fixed; left: 50%; bottom: calc(var(--bar-h) + 14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 11;
+  padding: 10px 14px; background: var(--sky-hi); color: var(--fg); border: 1px solid var(--acid); font: 600 13px/1.3 var(--sans); max-width: calc(100% - 32px); }
+
+@media (max-width: 720px) {
+  .bar { gap: 8px; }
+  .meter { display: none; }
+  .loops { gap: 4px; }
+  .loops button { min-width: 0; flex: 1 1 0; padding: 8px 4px 7px; }
+  .note { font-size: 9px; letter-spacing: 0.05em; white-space: nowrap; }
+}
+@media (prefers-reduced-motion: reduce) { .get, .play, .fx::before { transition: none; } }
+</style>
+<!--BODY-->
+<header>
+  <div class="mast">
+    <canvas id="fourd" aria-hidden="true"></canvas>
+    <div class="mast-in">
+      <div class="title-block"><h1 class="logo"><span class="w1">Other</span><span class="w2">world</span></h1><p class="vol">Vol. 1</p></div>
+      <a class="get" id="get" href="otherworld-vol1-fxaid-xl.wav" download>
+        <span class="vh">Download firmware .wav, fx aid / xl, 32 effects</span>
+        <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+          <!-- the button's letters as a mask: white keeps the green, black cuts the letters out -->
+          <mask id="get-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="260" height="155">
+            <rect width="260" height="155" fill="#fff"/>
+            <g fill="#000">
+              <text x="22" y="85" style="font: 400 84px var(--tall); text-transform: uppercase" textLength="177" lengthAdjust="spacingAndGlyphs">DOWNLOAD</text>
+              <text x="22" y="105" style="font: 900 15px var(--sans); font-stretch: 125%" textLength="150" lengthAdjust="spacingAndGlyphs">FIRMWARE .WAV</text>
+              <text x="22" y="136" style="font: 700 11px var(--sans)" textLength="216" lengthAdjust="spacing">FX AID / XL · 32 EFFECTS</text>
+            </g>
+          </mask>
+        </defs></svg>
+        <svg class="get-ink" viewBox="0 0 260 155" aria-hidden="true">
+          <rect class="fill" width="260" height="155" fill="var(--acid)" mask="url(#get-mask)"/>
+          <rect x="6.5" y="6.5" width="247" height="142" fill="none" stroke="var(--sky)" stroke-width="3"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+  <div class="band"><p>fx aid effect bank</p></div>
+</header>
+
+<main id="bank"></main>
+
+<footer>
+  <div class="foot">
+    <canvas id="membrane" aria-hidden="true"></canvas>
+    <div class="title" aria-hidden="true"><b>otherworld</b><b>vol. 1</b></div>
+    <div class="spaced" aria-hidden="true"><span>f</span><span>x</span><span>&nbsp;</span><span>a</span><span>i</span><span>d</span><span>&nbsp;</span><span>b</span><span>a</span><span>n</span><span>k</span></div>
+  </div>
+  <div class="credits tracked">
+    <span>effects: MIT license</span>
+    <span>in-browser FV-1: <a href="https://github.com/ngriaznov/spinfv1-rs" target="_blank" rel="noopener">spinfv1</a></span>
+    <span>for FX AID and FX AID XL · don't use on FX AID Pro</span>
+    <span>this project is not associated with Happy Nerding</span>
+  </div>
+</footer>
+
+<div class="bar" role="region" aria-label="Input loop">
+  <span class="loop-lab" id="loop-lab">Loop:</span>
+  <div class="loops" id="loops" role="group" aria-labelledby="loop-lab"></div>
+  <canvas class="meter" id="meter" width="120" height="68" aria-hidden="true"></canvas>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const DATA = /*__DATA__*/{};
+const PLAY = '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>';
+const PAUSE = '<svg viewBox="0 0 24 24"><path d="M6 4.5h4.5v15H6zM13.5 4.5H18v15h-4.5z"/></svg>';
+const BUSY = '<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 1-9 9h3a6 6 0 1 0 6-6z"/></svg>';
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// ------------------------------------------------------------------ the bank
+// knobs 0-2 are the effect's POT0-2; knob 3 is the module's analog dry/wet (1 = fully wet)
+const MIX_DEFAULT = 0.75;
+const knobState = new Map(DATA.effects.map(f => [f.id, [...f.pots, MIX_DEFAULT]]));
+// clocked effects: the clock fed to input R, as a Pam's Pro Workout output would divide or multiply it
+const RATES = ['x1', 'x2', 'x4'];
+const rateMul = r => r[0] === 'x' ? parseFloat(r.slice(1)) : 1 / parseFloat(r.slice(1));
+const rateState = new Map(DATA.effects.filter(f => f.clk).map(f => [f.id, Math.max(0, RATES.indexOf(f.rate || 'x2'))]));   // per effect (bank.json "clock"), x2 unless set
+
+// Pamela's screen shows the rate as Pam's does; its 1 is a plain bar, so x1 reads "xl"
+const pamText = r => r.replace(/1/g, 'l');
+
+function bindPam(el, f) {
+  const show = () => {
+    const i = rateState.get(f.id);
+    el.querySelector('.oled span').textContent = pamText(RATES[i]);
+    el.setAttribute('aria-label', `Clock rate ${RATES[i]}, tap to change`);
+    if (current && current.fx.id === f.id) send({ type: 'rate', mul: rateMul(RATES[i]) });
+  };
+  const next = () => { rateState.set(f.id, (rateState.get(f.id) + 1) % RATES.length); show(); };
+  el.addEventListener('click', next);
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { next(); e.preventDefault(); } });
+  show();
+}
+const cards = new Map();
+
+function ledsHtml(slot) {
+  const bank = Math.floor((slot - 1) / 8) + 1, pos = (slot - 1) % 8 + 1;
+  let h = '';
+  for (let i = 1; i <= 4; i++) h += `<i class="led${i === bank ? ' lit' : ''}"></i>`;
+  for (let i = 1; i <= 4; i++) h += `<i class="led${(pos <= 4 ? i === pos : i !== pos - 4) ? ' lit' : ''}"></i>`;
+  return h;
+}
+
+function knobSvg(v) {
+  const r = 20, c = 25, a0 = -225, sweep = 270;
+  const pt = a => [c + r * Math.cos(a * Math.PI / 180), c + r * Math.sin(a * Math.PI / 180)];
+  const arc = (s, e) => { const [x0, y0] = pt(s), [x1, y1] = pt(e); return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${e - s > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`; };
+  const end = a0 + sweep * v, [px, py] = pt(end);
+  return `<svg viewBox="0 0 50 50" aria-hidden="true">
+    <path class="k-track" d="${arc(a0, a0 + sweep)}" stroke-width="3" fill="none" stroke-dasharray="1 3.2" stroke-linecap="round"/>
+    ${v > 0.004 ? `<path class="k-val" d="${arc(a0, end)}" stroke-width="3.5" fill="none"/>` : ''}
+    <circle class="k-body" cx="${c}" cy="${c}" r="13" stroke-width="2"/>
+    <line class="k-ptr" x1="${c}" y1="${c}" x2="${(c + (px - c) * 0.62).toFixed(2)}" y2="${(c + (py - c) * 0.62).toFixed(2)}" stroke-width="3" stroke-linecap="square"/></svg>`;
+}
+
+function render() {
+  const main = $('bank');
+  for (const cat of DATA.categories) {
+    const fxs = DATA.effects.filter(f => f.cat === cat.key);
+    if (!fxs.length) continue;
+    const sec = document.createElement('section');
+    sec.className = 'cat';
+    sec.innerHTML = `<h2>${esc(cat.name)}</h2><hr><div class="grid"></div>`;
+    const grid = sec.querySelector('.grid');
+    for (const f of fxs) {
+      const el = document.createElement('article');
+      el.className = 'fx';
+      const labels = [...f.knobs, 'wet'];
+      el.innerHTML = `
+        <button class="play" type="button" aria-label="Play ${esc(f.name)}">${PLAY}</button>
+        <h3><span>${esc(f.name)}</span>${f.clk ? '<span class="clk">clk</span>' : ''}</h3>
+        <div class="leds" title="Bank ${Math.floor((f.slot - 1) / 8) + 1}, effect ${(f.slot - 1) % 8 + 1}">${ledsHtml(f.slot)}</div>
+        <div class="knobs">${labels.map((k, i) => i === 3 && f.clk ? `<div class="mix" role="group" aria-label="Mix">
+          <div class="pair"><div class="fader" tabindex="0" role="slider" aria-label="Mix, dry" aria-valuemin="0" aria-valuemax="100"></div><div class="fader" tabindex="0" role="slider" aria-label="Mix, fx" aria-valuemin="0" aria-valuemax="100"></div></div>
+          <span class="lab">Mix</span><span class="fns"><span>Dry</span><span>FX</span></span></div>`
+          : `<div class="knob${i === 3 ? ' wet' : ''}" tabindex="0" role="slider" aria-label="${i < 3 ? `CV${i + 1}, ${esc(k)}` : 'Dry/wet'}" aria-valuemin="0" aria-valuemax="100" data-i="${i}">${knobSvg(knobState.get(f.id)[i])}<span class="lab">${i < 3 ? `CV${i + 1}` : 'Dry/Wet'}</span>${i < 3 ? `<span class="fn">${esc(k)}</span>` : ''}</div>`).join('')}${f.clk ? `<div class="pam" tabindex="0" role="button" aria-label="Clock rate">
+          <div class="row"><div class="oled" aria-hidden="true"><span></span></div></div><span class="lab">Clock</span></div>` : ''}</div>
+        <div class="extra">${f.clk ? '<p class="note">Feed triggers on input R, mix 100% wet</p>' : ''}</div>
+        <a class="dl" href="fx/${encodeURIComponent(f.id)}.spn" download="${esc(f.id)}.spn">.spn ↓</a>`;
+      el.querySelector('.play').addEventListener('click', () => toggle(f));
+      el.querySelectorAll('.knob').forEach(k => bindKnob(k, f, +k.dataset.i));
+      if (f.clk) { bindPam(el.querySelector('.pam'), f); bindMix(el.querySelector('.mix'), f); }
+      el.querySelector('.dl').addEventListener('click', ev => offer(ev, `fx/${f.id}.spn`, `${f.id}.spn`));
+      grid.appendChild(el);
+      cards.set(f.id, el);
+    }
+    main.appendChild(sec);
+  }
+  const loops = $('loops');
+  for (const l of DATA.loops) {
+    const b = document.createElement('button');
+    const roman = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'][DATA.loops.indexOf(l)];
+    b.type = 'button'; b.textContent = roman; b.title = `${l.name}: ${l.source}`; b.dataset.id = l.id;
+    b.setAttribute('aria-label', `Loop ${roman}, ${l.name}`);
+    b.addEventListener('click', () => chooseLoop(l.id));
+    loops.appendChild(b);
+  }
+  $('get').addEventListener('click', ev => offer(ev, DATA.firmware, DATA.firmware));
+}
+
+function faderSvg(v) {
+  const top = 5, bot = 45, y = bot - (bot - top) * v;
+  return `<svg viewBox="0 0 20 50" aria-hidden="true">
+    <line class="k-track" x1="10" y1="${top}" x2="10" y2="${bot}" stroke-width="3" stroke-dasharray="1 3.2" stroke-linecap="round"/>
+    ${v > 0.004 ? `<line class="f-val" x1="10" y1="${bot}" x2="10" y2="${y.toFixed(2)}" stroke-width="3.5"/>` : ''}
+    <rect class="f-cap" x="3" y="${(y - 4).toFixed(2)}" width="14" height="8" rx="1.5" stroke-width="2"/></svg>`;
+}
+// MIX on clocked effects: knob 3 shown as the pair it really is, dry falling as wet rises
+function bindMix(el, f) {
+  const faders = [...el.querySelectorAll('.fader')];         // [dry, fx]
+  const paint = () => {
+    const m = knobState.get(f.id)[3];
+    faders.forEach((fd, j) => { const v = j ? m : 1 - m; fd.innerHTML = faderSvg(v); fd.setAttribute('aria-valuenow', Math.round(v * 100)); });
+  };
+  const set = m => {
+    m = Math.min(1, Math.max(0, m));
+    knobState.get(f.id)[3] = m; paint();
+    if (current && current.fx.id === f.id) send({ type: 'mix', v: m });
+  };
+  faders.forEach((fd, j) => {
+    const toMix = e => { const r = fd.getBoundingClientRect(), v = (r.bottom - r.height * 0.1 - e.clientY) / (r.height * 0.8); return j ? v : 1 - v; };
+    fd.addEventListener('pointerdown', e => { set(toMix(e)); fd.focus(); try { fd.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault(); });
+    fd.addEventListener('pointermove', e => { if (fd.hasPointerCapture(e.pointerId)) set(toMix(e)); });
+    fd.addEventListener('wheel', e => { e.preventDefault(); set(knobState.get(f.id)[3] - (j ? 1 : -1) * e.deltaY * 0.0012); }, { passive: false });
+    fd.addEventListener('dblclick', () => set(MIX_DEFAULT));
+    fd.addEventListener('keydown', e => {
+      const step = (e.shiftKey ? 0.1 : 0.01) * (j ? 1 : -1), m = knobState.get(f.id)[3];
+      if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { set(m + step); e.preventDefault(); }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { set(m - step); e.preventDefault(); }
+    });
+  });
+  paint();
+}
+
+function bindKnob(el, f, i) {
+  const set = v => {
+    v = Math.min(1, Math.max(0, v));
+    knobState.get(f.id)[i] = v;
+    el.firstElementChild.outerHTML = knobSvg(v);
+    el.setAttribute('aria-valuenow', Math.round(v * 100));
+    if (current && current.fx.id === f.id) send(i < 3 ? { type: 'pot', i, v } : { type: 'mix', v });
+  };
+  el.setAttribute('aria-valuenow', Math.round(knobState.get(f.id)[i] * 100));
+  let y0 = 0, v0 = 0;
+  el.addEventListener('pointerdown', e => { el.setPointerCapture(e.pointerId); y0 = e.clientY; v0 = knobState.get(f.id)[i]; e.preventDefault(); });
+  el.addEventListener('pointermove', e => { if (el.hasPointerCapture(e.pointerId)) set(v0 + (y0 - e.clientY) / 180); });
+  el.addEventListener('wheel', e => { e.preventDefault(); set(knobState.get(f.id)[i] - e.deltaY * 0.0012); }, { passive: false });
+  el.addEventListener('dblclick', () => set(i < 3 ? f.pots[i] : MIX_DEFAULT));
+  el.addEventListener('keydown', e => {
+    const step = e.shiftKey ? 0.1 : 0.01, v = knobState.get(f.id)[i];
+    if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { set(v + step); e.preventDefault(); }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { set(v - step); e.preventDefault(); }
+  });
+}
+
+// ------------------------------------------------------------------ audio
+// The player runs on the audio thread (fv1-worklet.js: the loop, the clock, the emulated chip,
+// the dry/wet crossfade), so drawing and scrolling on the page can't cause dropouts.
+let ctx = null, node = null, analyser = null, current = null, chosenLoop = DATA.loops[0].id, playToken = 0, wasmBytes = null;
+const buffers = new Map(), sources = new Map();
+let level = 0;
+
+async function ensureCtx() {
+  if (!ctx || ctx.state === 'closed') {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = ctx.createAnalyser(); analyser.fftSize = 1024; analyser.smoothingTimeConstant = 0.5;
+    analyser.connect(ctx.destination);
+    node = null;
+  }
+  // 'suspended' after our own pause, 'interrupted' on iOS after the page was hidden or a call
+  if (ctx.state !== 'running') await Promise.race([ctx.resume(), new Promise(r => setTimeout(r, 800))]);
+}
+async function getNode() {
+  if (node) return node;
+  if (!wasmBytes) wasmBytes = await engineBytes();
+  await ctx.audioWorklet.addModule(`fv1-worklet.js?v=${DATA.build}`);
+  node = new AudioWorkletNode(ctx, 'fv1-player', { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2] });
+  node.port.onmessage = e => { if (e.data.type === 'error') toast(`Couldn't start the effect: ${e.data.message}`); };
+  node.port.postMessage({ type: 'wasm', bytes: wasmBytes });     // copied: a rebuilt context needs them again
+  node.connect(analyser);
+  return node;
+}
+const send = m => { if (node) node.port.postMessage(m); };
+const sendLoop = b => send({ type: 'loop', L: b.getChannelData(0).slice(), R: b.getChannelData(b.numberOfChannels > 1 ? 1 : 0).slice() });
+
+// Leaving the page (another tab, the app in the background, a phone call) stops the audio
+// context. Coming back, resume what was playing; if the browser won't resume that context,
+// build a new one and restart the effect with the same knobs.
+async function revive() {
+  if (!ctx || !current || current.paused) return;
+  if (ctx.state === 'running') return;
+  try { await Promise.race([ctx.resume(), new Promise(r => setTimeout(r, 800))]); } catch (e) {}
+  if (ctx.state === 'running') return;
+  const fx = current.fx;
+  try { ctx.close(); } catch (e) {}
+  ctx = null; analyser = null; node = null;
+  await ensureCtx();
+  if (ctx.state !== 'running') { current.paused = true; paint(); return; }     // needs a tap: the play button resumes
+  current = null;
+  play(fx);
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') revive(); });
+addEventListener('pageshow', () => revive());
+addEventListener('focus', () => revive());
+document.addEventListener('pointerdown', () => { if (ctx && current && !current.paused && ctx.state !== 'running') revive(); }, true);
+// The loops and the engine start downloading as soon as the page opens (loop I first); decoding
+// waits for the audio context, which only a click may start.
+const raw = new Map();
+const fetchBytes = url => fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); });
+const loopBytes = id => {
+  if (!raw.has(id)) raw.set(id, fetchBytes(`audio/${id}.wav`).catch(e => { raw.delete(id); throw e; }));
+  return raw.get(id);
+};
+let wasmFetch = null;
+const engineBytes = () => wasmFetch || (wasmFetch = fetchBytes(`fv1.wasm?v=${DATA.build}`).catch(e => { wasmFetch = null; throw e; }));
+function preload() {
+  loopBytes(DATA.loops[0].id).catch(() => {});
+  engineBytes().catch(() => {});
+  for (const l of DATA.loops.slice(1)) loopBytes(l.id).catch(() => {});
+}
+const loopBuffer = id => {
+  if (!buffers.has(id)) buffers.set(id, loopBytes(id).then(b => ctx.decodeAudioData(b.slice(0)))   // a copy: decoding detaches it
+    .catch(e => { buffers.delete(id); throw e; }));
+  return buffers.get(id);
+};
+const fxSource = id => {
+  if (!sources.has(id)) sources.set(id, fetch(`fx/${id}.spn`).then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+    .catch(e => { sources.delete(id); throw e; }));
+  return sources.get(id);
+};
+
+async function play(fx) {
+  await ensureCtx();
+  const token = ++playToken;
+  const card = cards.get(fx.id), btn = card.querySelector('.play');
+  btn.classList.add('busy'); btn.innerHTML = BUSY;
+  const loopId = chosenLoop || DATA.defaultLoop[fx.cat] || DATA.loops[0].id;
+  try {
+    const [buffer, , src] = await Promise.all([loopBuffer(loopId), getNode(), fxSource(fx.id)]);
+    if (token !== playToken) return;
+    send({ type: 'wasm', bytes: wasmBytes });                          // a fresh engine for this run
+    const k = knobState.get(fx.id);
+    sendLoop(buffer);
+    send({ type: 'load', src: new TextEncoder().encode(src), pots: k.slice(0, 3), mix: k[3], clk: fx.clk, clockSeconds: DATA.clock,
+           mul: fx.clk ? rateMul(RATES[rateState.get(fx.id)]) : 1 });
+    current = { fx, loopId, paused: false };
+  } catch (e) {
+    toast(`Couldn't start ${fx.name}: ${e.message}`);
+    current = null;
+  } finally {
+    btn.classList.remove('busy');
+    paint();
+  }
+}
+
+async function toggle(fx) {
+  if (current && current.fx.id === fx.id) {
+    if (current.paused) {
+      await ensureCtx();
+      if (!node || ctx.state !== 'running') { const f = current.fx; current = null; return play(f); }   // the old context is gone
+      current.paused = false;
+    } else { try { await ctx.suspend(); } catch (e) {} current.paused = true; }
+    paint();
+    return;
+  }
+  play(fx);
+}
+
+// Switching loops keeps the effect running and the transport going: the new loop comes in at the
+// same position in the bar, on the same clock, the way a sequencer changes pattern on a master clock.
+async function chooseLoop(id) {
+  chosenLoop = id;
+  if (current) {
+    await ensureCtx();
+    current.loopId = id; current.paused = false;
+    sendLoop(await loopBuffer(id));
+  }
+  paint();
+}
+
+function paint() {
+  for (const [id, el] of cards) {
+    const on = current && current.fx.id === id;
+    el.classList.toggle('on', !!on);
+    const btn = el.querySelector('.play');
+    if (!btn.classList.contains('busy')) btn.innerHTML = on && !current.paused ? PAUSE : PLAY;
+    btn.setAttribute('aria-label', `${on && !current.paused ? 'Pause' : 'Play'} ${DATA.effects.find(f => f.id === id).name}`);
+  }
+  const loopId = current ? current.loopId : chosenLoop;
+  const loop = DATA.loops.find(l => l.id === loopId);
+  for (const b of $('loops').children) b.classList.toggle('sel', b.dataset.id === loopId);
+}
+
+let toastTimer = 0;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 4000); }
+
+// ------------------------------------------------------------------ downloads
+// On the website these are plain links. Inside a Claude.ai preview, files leave the page only
+// through its download permission, as a .zip (the sandbox takes no .wav or .spn).
+function offer(ev, url, filename) {
+  if (!(window.claude && typeof window.claude.use === 'function')) return;
+  ev.preventDefault();
+  (async () => {
+    const dl = await window.claude.use('downloads');
+    if (!dl) { toast('Downloads are not available in this preview.'); return; }
+    const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
+    try { await dl.save({ filename: filename.replace(/\.[^.]+$/, '') + '.zip', data: new Blob([zipStore(filename, bytes)]) }); }
+    catch (e) { if (e && e.code !== 'declined') toast(`Download failed: ${e.message || e.code}`); }
+  })();
+}
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function zipStore(name, data) {
+  let crc = 0xffffffff; for (let i = 0; i < data.length; i++) crc = CRC[(crc ^ data[i]) & 0xff] ^ (crc >>> 8); crc = (crc ^ 0xffffffff) >>> 0;
+  const fn = new TextEncoder().encode(name), size = data.length;
+  const local = new DataView(new ArrayBuffer(30)), central = new DataView(new ArrayBuffer(46)), end = new DataView(new ArrayBuffer(22));
+  local.setUint32(0, 0x04034b50, true); local.setUint16(4, 20, true); local.setUint16(12, 0x5921, true);
+  local.setUint32(14, crc, true); local.setUint32(18, size, true); local.setUint32(22, size, true); local.setUint16(26, fn.length, true);
+  central.setUint32(0, 0x02014b50, true); central.setUint16(4, 20, true); central.setUint16(6, 20, true); central.setUint16(14, 0x5921, true);
+  central.setUint32(16, crc, true); central.setUint32(20, size, true); central.setUint32(24, size, true); central.setUint16(28, fn.length, true);
+  const cdOff = 30 + fn.length + size, cdLen = 46 + fn.length;
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, 1, true); end.setUint16(10, 1, true); end.setUint32(12, cdLen, true); end.setUint32(16, cdOff, true);
+  const out = new Uint8Array(cdOff + cdLen + 22); let p = 0;
+  for (const part of [new Uint8Array(local.buffer), fn, data, new Uint8Array(central.buffer), fn, new Uint8Array(end.buffer)]) { out.set(part, p); p += part.length; }
+  return out;
+}
+
+// ------------------------------------------------------------------ print graphics
+function lattice(w, h, seed) {
+  const g = new Float32Array(w * h);
+  let s = seed >>> 0;
+  for (let i = 0; i < g.length; i++) { s = (s * 1664525 + 1013904223) >>> 0; g[i] = s / 4294967296; }
+  return { w, h, g };
+}
+function sample(L, x, y) {
+  x = ((x % L.w) + L.w) % L.w; y = ((y % L.h) + L.h) % L.h;
+  const x0 = x | 0, y0 = y | 0, x1 = (x0 + 1) % L.w, y1 = (y0 + 1) % L.h, fx = x - x0, fy = y - y0;
+  const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy), g = L.g;
+  const a = g[y0 * L.w + x0], b = g[y0 * L.w + x1], c = g[y1 * L.w + x0], d = g[y1 * L.w + x1];
+  return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+}
+const N1 = lattice(64, 64, 7), N2 = lattice(64, 64, 91), N3 = lattice(64, 64, 1234);
+function cloud(x, y, t) {
+  return 0.55 * sample(N1, x * 0.9 + t * 0.6, y * 0.9) + 0.3 * sample(N2, x * 2.1 - t * 0.25, y * 2.1 + t * 0.1) + 0.15 * sample(N3, x * 4.3, y * 4.3 - t * 0.3);
+}
+let rnd = 99; const rand = () => { rnd = (rnd * 1664525 + 1013904223) >>> 0; return rnd / 4294967296; };
+
+function sizeCanvas(cv, scale) {
+  const r = cv.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1) * scale;
+  const w = Math.max(1, Math.round(r.width * d)), h = Math.max(1, Math.round(r.height * d));
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; cv._img = null; }
+  return [w, h];
+}
+
+// stars and slow wireframe planets (Bit-Max, without the airbrush)
+function galaxy(cv, t, o) {
+  const g = cv.getContext('2d'), [w, h, ] = sizeCanvas(cv, 1);
+  if (!cv._img) {
+    rnd = o.seed; cv._img = { stars: Array.from({ length: Math.round(w * h / 2600) }, () => [rand() * w, rand() * h, rand() * 1.4 + 0.3, rand() * 6.28]) };
+  }
+  g.fillStyle = '#050507'; g.fillRect(0, 0, w, h);
+  for (const [x, y, r, ph] of cv._img.stars) {
+    g.globalAlpha = 0.35 + 0.35 * Math.sin(t * 0.7 + ph);
+    g.fillStyle = r > 1.4 ? '#d8f56a' : '#ffffff';
+    g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill();
+  }
+  g.globalAlpha = 1;
+  for (const p of o.planets) {
+    const cx = w * p.x, cy = h * p.y, R = Math.min(w * 0.22, h * p.r), rot = t * 0.06 * p.dir + level * 0.4;
+    const grd = g.createRadialGradient(cx - R * 0.3, cy - R * 0.3, R * 0.1, cx, cy, R);
+    grd.addColorStop(0, 'rgba(255,120,150,0.30)'); grd.addColorStop(1, 'rgba(160,20,60,0.06)');
+    g.save(); g.beginPath(); g.rect(0, p.clip === 'top' ? cy : 0, w, p.clip === 'top' ? h : cy); g.clip();
+    g.fillStyle = grd; g.beginPath(); g.arc(cx, cy, R, 0, 6.283); g.fill();
+    g.strokeStyle = 'rgba(228,64,95,0.85)'; g.lineWidth = 1;
+    for (let k = -5; k <= 5; k++) {                          // latitude lines
+      const yy = cy + (k / 6) * R, rr = Math.sqrt(Math.max(0, R * R - (yy - cy) ** 2));
+      g.beginPath(); g.ellipse(cx, yy, rr, rr * 0.18, 0, 0, 6.283); g.stroke();
+    }
+    for (let k = 0; k < 10; k++) {                           // meridians, turning
+      const a = rot + k * Math.PI / 10, sx = Math.cos(a);
+      g.beginPath(); g.ellipse(cx, cy, Math.abs(sx) * R, R, 0, 0, 6.283); g.stroke();
+    }
+    g.restore();
+  }
+}
+
+const DRAW = {
+  foot: (cv, t) => galaxy(cv, t, { seed: 8, planets: [{ x: 0.5, y: 1.15, r: 0.75, dir: 1, clip: 'bottom' }] }),
+};
+
+function drawMeter() {
+  const cv = $('meter'), g = cv.getContext('2d'), w = cv.width, h = cv.height;
+  g.clearRect(0, 0, w, h);
+  const now = performance.now() / 1000, col = getComputedStyle(document.documentElement).getPropertyValue('--chip-sel').trim() || '#cde62c';
+  g.fillStyle = col;
+  for (let x = 0; x < w; x += 4) {
+    const v = Math.max(0.04, Math.min(1, level * 2.4 * (0.55 + 0.45 * Math.sin(x * 0.21 + now * 3))));
+    g.fillRect(x, h * (1 - v), 2, h * v);
+  }
+}
+
+const visible = { membrane: true };
+const td = new Float32Array(1024);
+let last = 0;
+function frame(now) {
+  now = now || performance.now();
+  if (analyser && current && !current.paused) {
+    analyser.getFloatTimeDomainData(td);
+    let s = 0; for (let i = 0; i < td.length; i++) s += td[i] * td[i];
+    level += (Math.min(1, Math.sqrt(s / td.length) * 4) - level) * 0.15;
+  } else level *= 0.94;
+  if (reduced || now - last > 1000 / 30) {          // the footer moves slowly: 30 fps is plenty
+    last = now;
+    const t = now / 1000, d = DRAW;
+    if (visible.membrane) d.foot($('membrane'), t);
+  }
+  drawMeter();
+  if (!reduced) requestAnimationFrame(frame);
+}
+
+render();
+paint();
+preload();
+if ('IntersectionObserver' in window) {
+  const io = new IntersectionObserver(es => es.forEach(e => { visible[e.target.id] = e.isIntersecting; }));
+  io.observe($('membrane'));
+}
+requestAnimationFrame(frame);
+
+let header4d = null;
+// The header video: the glitching player (glitch-video.js) decodes header-4d.mp4 in wasm, in a worker
+// where it can, and pauses itself off screen; the poster still behind it covers any failure.
+(() => {
+  const v = `?v=${DATA.build}`, s = document.createElement('script');
+  s.src = `glitch-video.js${v}`;
+  s.onload = () => { if (window.GlitchVideo) header4d = GlitchVideo.create($('fourd'), { src: `header-4d.mp4${v}`, wasm: `mpeg4-glitch.wasm${v}`, intensity: 0.7 }); };
+  document.head.appendChild(s);
+})();
+</script>

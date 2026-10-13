@@ -1,0 +1,94 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>header4d</title>
+<style>
+  body { margin: 0; background: #050507; color: #c6f03a; font: 12px/1.4 monospace; }
+  canvas { display: block; width: 640px; height: 320px; }
+  pre { margin: 8px; white-space: pre-wrap; }
+</style>
+<canvas id="view"></canvas>
+<pre id="log"></pre>
+<script>
+// WebGL2 harness for world.frag. Renders the requested loop frames into an RGBA32F buffer (linear
+// HDR), reads them back and POSTs them to render.py, which post-processes them into PNGs.
+//   world.html?frames=0-575&dir=frames[&ss=2][&strips=8]
+const W = 1280, H = 640, NFRAMES = 576;
+const params = new URLSearchParams(location.search);
+const dir = params.get('dir') || 'stills';
+const ss = +(params.get('ss') || 2);
+const strips = +(params.get('strips') || 8);
+const debug = +(params.get('debug') || 0);
+const frames = (params.get('frames') || '0').split(',').flatMap(part => {
+  const [a, b] = part.split('-').map(Number);
+  return b === undefined ? [a] : Array.from({ length: b - a + 1 }, (_, i) => a + i);
+});
+const logEl = document.getElementById('log');
+const log = (m) => { logEl.textContent = m + '\n' + logEl.textContent.slice(0, 2000); };
+const report = (m) => fetch('/log', { method: 'POST', body: m });
+
+(async () => {
+  document.title = 'running';
+  const src = await (await fetch('world.frag?' + Date.now())).text();
+  const canvas = document.getElementById('view');
+  canvas.width = W; canvas.height = H;
+  const gl = canvas.getContext('webgl2', { antialias: false });
+  if (!gl) throw new Error('no WebGL2');
+  if (!gl.getExtension('EXT_color_buffer_float')) throw new Error('no EXT_color_buffer_float');
+
+  const compile = (type, text) => {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, text);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+    return s;
+  };
+  const prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl.VERTEX_SHADER, '#version 300 es\nin vec2 a;\nvoid main() { gl_Position = vec4(a, 0.0, 1.0); }'));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, src));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+  gl.useProgram(prog);
+  const vb = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vb);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, 'a');
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const uRes = gl.getUniformLocation(prog, 'uRes');
+  const uPhase = gl.getUniformLocation(prog, 'uPhase');
+  const uSS = gl.getUniformLocation(prog, 'uSS');
+
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, W, H);
+  const fb = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  gl.viewport(0, 0, W, H);
+  gl.uniform2f(uRes, W, H);
+  gl.uniform1i(uSS, ss);
+  gl.uniform1i(gl.getUniformLocation(prog, 'uDebug'), debug);
+  gl.enable(gl.SCISSOR_TEST);
+
+  const buf = new Float32Array(W * H * 4);
+  const inflight = [];
+  const t0 = performance.now();
+  for (const f of frames) {
+    gl.uniform1f(uPhase, f / NFRAMES);            // frame 576 renders phase 1.0 for the seam check
+    for (let i = 0; i < strips; i++) {            // strips keep each draw short for the GPU watchdog
+      gl.scissor(0, Math.floor(i * H / strips), W, Math.ceil(H / strips));
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.finish();
+    }
+    gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, buf);
+    inflight.push(fetch(`/frame?n=${f}&dir=${dir}`, { method: 'POST', body: buf.slice() }));
+    if (inflight.length >= 6) await inflight.shift();
+    log(`frame ${f}  ${((performance.now() - t0) / 1000).toFixed(1)} s`);
+  }
+  await Promise.all(inflight);
+  const msg = `done: ${frames.length} frames to ${dir} in ${((performance.now() - t0) / 1000).toFixed(1)} s`;
+  log(msg);
+  await report(msg);
+  document.title = 'done';
+})().catch(e => { document.title = 'error'; log(String(e)); report('ERROR ' + String(e)); });
+</script>

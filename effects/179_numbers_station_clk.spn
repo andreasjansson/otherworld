@@ -1,22 +1,21 @@
 ; @name Numbers Station_clk
-; @tagline Your playing keyed out on the clock as chaotic Morse slices, short and long with hard silent rests, every slice crushed, filtered and thrown hard left or right
-; @description A shortwave numbers station that keys out your own playing as Morse code. Every
-; @description clock pulse is cut into a chaotic number of units, two to eight, chosen afresh on
-; @description each pulse, and the station keys slices of your input on that grid: dits one unit
-; @description long, dahs three, with hard, completely silent rests between them. Slice lengths,
-; @description rest lengths and subdivisions change all the time and never repeat, but every slice
-; @description starts on the clock's grid. Each slice jumps hard left or right, away from the last.
-; @description Nothing is added to your sound: it is only crushed and filtered. Chaos sets how
-; @description wild the subdivisions get (0: two units per pulse; 1: anything from two to eight).
-; @description Rests sets how long the silences can be (0: always one unit, a tight stream; 1: up
-; @description to eight units). Dial tunes the station: fully left, your playing is lightly crushed
-; @description and open; turning it up lowers the sample rate, coarsens the level steps and closes
-; @description a resonant band; fully right it is completely crushed and squeezed into a narrow
-; @description band around 450 Hz.
+; @tagline Your playing keyed out on the clock by an 8-step loop of whole-pulse slices, half-pulse slices and silent steps that mutates as you turn up Chaos, every slice crushed, filtered and thrown hard left or right
+; @description A shortwave numbers station that keys out your own playing on your clock. An 8-step
+; @description loop runs one step per clock pulse, and each step is a slice the whole pulse long, a
+; @description slice half a pulse long, or a hard, completely silent rest. Chaos is the chance that a
+; @description step is rewritten as it comes round: at 0 the loop repeats exactly, turning it up
+; @description mutates it more and more, and at 1 every pass is new. Turn Chaos up to write a
+; @description rhythm, then down to freeze it; at load the loop is eight whole-pulse slices. Rests is
+; @description the chance that a rewritten step is silent (up to 80 %); the others are whole or half
+; @description at random. Each slice jumps hard left or right, away from the last. Nothing is added
+; @description to your sound: it is only crushed and filtered. Dial tunes the station: fully left,
+; @description your playing is lightly crushed and open; turning it up lowers the sample rate,
+; @description coarsens the level steps and closes a resonant band; fully right it is completely
+; @description crushed and squeezed into a narrow band around 450 Hz.
 ; @clock
 ; @pots Chaos | Rests | Dial
 ; @render 0.85, 0.35, 0.5
-; @components clock-locked chaotic Morse grid (each clock period split into 2-8 units, chosen per period by a chaos map), dits (1 unit) and dahs (3 units) chosen by chaos, chaotic silent rests of 1-8 units (Rests), hard gate with 1 ms edges, chaotic hard left/right side per slice, periodic sample-and-hold crush (8.2 kHz to 780 Hz), log-domain level crush (magnitudes floored to 12 dB steps, depth Dial squared), state-variable filter morphing from an open low-pass to a narrow 450 Hz band, feed-forward peak limiter
+; @components clock-locked 8-step loop (2 bits a step: whole pulse, half pulse, off) rewritten Turing-style with chance Chaos (off with chance 0.8 Rests, else whole or half by a chaos bit), slices timed from the last clock period (96 % or half of it), hard gate with 1 ms edges, chaotic hard left/right side per slice, periodic sample-and-hold crush (8.2 kHz to 780 Hz), log-domain level crush (magnitudes floored to 12 dB steps, depth Dial squared), state-variable filter morphing from an open low-pass to a narrow 450 Hz band, feed-forward peak limiter
 ;
 ; Otherworld vol. 1 (github.com/andreasjansson/otherworld), MIT licence.
 
@@ -24,12 +23,10 @@ equ	clkhp	reg0		; clock detector: low-pass state
 equ	clkin	reg1		; free (the factory clock block's conditioned sample)
 equ	clkst	reg2		; clock state: -0.25 high, -0.5 low (armed)
 equ	clkprev	reg3
-equ	su	reg4		; units left in this slice, then in the rest after it (1/64 a unit)
-equ	cnt	reg5		; time since the last clock edge (1.0 = 4.13 s)
-equ	k	reg6		; constant $0F8000: the count's step (x 2^-14) and the 10 ms floor
-equ	d	reg8		; this period's unit: period / m
-equ	nt	reg9		; the next unit's start (in cnt's scale, before the 1 % margin)
-equ	key	reg11		; key: 0.999 down, 0 up
+equ	pat	reg4		; the 8-step loop: 2 bits a step (bits 15..0), 0 full, 1 half, 2 off
+equ	cnt	reg5		; time since the last clock edge (2^-17 a sample, 1.0 = 4 s)
+equ	t	reg6		; this step's code
+equ	stop	reg8		; when this step's slice ends (in cnt's scale; 0 = off)
 equ	env	reg12		; keying envelope
 equ	pn	reg13		; this slice's side: -1 right .. +1 left
 equ	lp	reg14		; the filter
@@ -46,8 +43,6 @@ equ	e	reg24		; the log crush, as a log2 gain / 16
 equ	y	reg25		; filtered
 equ	g	reg26		; limiter gain
 
-	or	$0F8000			; k (ACC is 0 here)
-	wrax	k, 0
 ; ---- clock: rising-edge detector, then the count
 	ldax	adcr
 	rdfx	clkhp, 0.06		; low-pass of ADCR, tau ~0.5 ms
@@ -65,60 +60,63 @@ c_lo:	sof	1.0, 0.125		; d - 0.0625: below it the input re-arms; between, hold
 c_hi:	ldax	clkprev			; latch on low -> high
 	rdax	clkst, -1.0
 	skp	neg, c_latch
-; ---- not an edge: count, and a new unit when cnt reaches 1.01 nt (none before the first edge: d = 0)
-	ldax	cnt
-	rdax	k, 0.00006103515625	; + k x 2^-14 a sample: 1.0 = 4.13 s
-	wrax	cnt, -1.0
-	rdax	nt, 1.01
-	mulx	d
-	skp	gez, c_done
-	skp	neg, c_add
-; ---- a clock edge: this period's subdivision m = 2..8, chaotic (Chaos), d = last period / m
-c_latch: ldax	ns
-	and	$03F800			; u x 2^-5, u in [0, 1) (bits 17..11)
-	mulx	pot0
-	sof	0.875, 0
-	and	$078000			; j x 2^-8, j = floor(7 u Chaos) = 0..6
-	sof	1.0, 0.0078125		; m = j + 2 = 2..8
-	log	-1.0, -0.5
-	exp	1.0, 0			; 1/m
-	mulx	cnt
-	maxx	k, 0.02			; at least 10 ms
-	wrax	d, 0
+; ---- not an edge: count the time since the edge
+	clr
+	or	$000040			; 2^-17 a sample
+	rdax	cnt, 1.0
 	wrax	cnt, 0
-	wrax	nt, 0
-c_add:	ldax	nt
-	rdax	d, 1.0
-	wrax	nt, 0
-; ---- every unit: su counts down the units left in the slice, then in the rest after it
-	ldax	su
-	sof	1.0, -0.015625
-	wrax	su, 1.0
-	skp	gez, c_done
-	ldax	key
-	skp	zro, n_elem
-; ---- the slice is over: the key goes up for a rest of 1 + floor(8 u Rests) units (1..8)
-	ldax	ns
-	absa
-	mulx	pot1
-	and	$700000
-	sof	0.125, 0
-	wrax	su, 0
-	wrax	key, 0			; key up (ACC is 0)
 	skp	zro, c_done
-; ---- the rest is over: the next slice, a dit (1 unit) or a dah (3), on its own side
-n_elem:	ldax	ns
-	and	$040000			; bit 18 of the chaos: 2/64, a dah (2 units more), or 0, a dit
-	wrax	su, 0
+; ---- a clock edge: the step coming round, rewritten with chance Chaos (Rests: the chance it's off)
+c_latch: ldax	ns
+	absa
+	rdax	pot0, -1.0		; |chaos| below Chaos: a new step
+	skp	neg, c_new
+	ldax	pat			; else the step from 8 pulses back, as it was
+	and	$00C000
+	sof	0.00006103515625, 0	; to bits 1..0
+	skp	gez, c_rot
+c_new:	ldax	ns
+	and	$00FFFF			; a fresh draw from the chaos
+	rdax	pot1, -0.0062255859375	; below 0.8 Rests: off (at most 80 % of new steps)
+	skp	neg, c_off
+	and	$000001			; else full (0) or half (1), from a chaos bit
+	skp	gez, c_rot
+c_off:	clr
+	or	$000002
+c_rot:	wrax	t, 0			; turn the loop: the step goes to the bottom, 7 pulses to the top
+	ldax	pat
+	and	$003FFF
+	sof	-2.0, 0
+	sof	-2.0, 0
+	rdax	t, 1.0
+	wrax	pat, 0
+; ---- play the step: a slice for the whole period (96 %, so it ends silent before the next edge) or half of
+;      it, timed from the last period (cnt at the edge); off: stop 0
+	ldax	t
+	skp	zro, c_full		; 0: full
+	and	$000002
+	skp	zro, c_half		; 1: half
+	clr				; 2: off
+	skp	zro, c_stop
+c_half:	ldax	cnt
+	sof	0.5, 0
+	skp	gez, c_side
+c_full:	ldax	cnt
+	sof	0.96, 0
+c_side:	wrax	stop, 0
 	rdax	ns, 1.99		; its side: chaotic, hard left or right most of the time,
-	rdax	pn, -0.6		; and pushed away from the last one (back and forth)
+	rdax	pn, -0.6		; and pushed away from the last one (the key is up: the jump is silent)
 	wrax	pn, 0
-	sof	0, 0.999		; key down
-	wrax	key, 0
+	skp	zro, c_cnt
+c_stop:	wrax	stop, 0
+c_cnt:	wrax	cnt, 0
 c_done:	ldax	clkst
 	wrax	clkprev, 0
-; ---- keying (1 ms edges); the chaos (a tent map nudged by your input)
-	ldax	key
+; ---- keying (1 ms edges): down while cnt < stop (env runs 0 .. -1: the output's polarity is irrelevant);
+;      the chaos (a tent map nudged by your input)
+	ldax	cnt
+	rdax	stop, -1.0
+	and	$800000
 	rdfx	env, 0.03
 	wrax	env, 0
 	ldax	ns
@@ -147,9 +145,8 @@ c_done:	ldax	clkst
 	mulx	pot2
 	mulx	pot2			; depth Dial^2
 	exp	1.0, 0
-	wrax	e, 0
-	rdax	adcl, 0.28
-	mulx	e
+	mulx	adcl
+	sof	0.28, 0
 	wrax	hv, 0
 s_hold:
 ; ---- the filter: Chamberlin SVF, q = 1.295 w + 0.138 (Q 0.8 at Dial 0 .. 4 at 1)
@@ -173,7 +170,7 @@ s_hold:
 	wrax	y, 1.0
 	maxx	lenv, 0.9998
 	wrax	lenv, 1.0
-	log	-1.0, -0.2001953125
+	log	-1.0, -0.20703125		; (0.7 dB under the old ceiling: full-length slices peak higher)
 	rdax	w, -0.02613
 	exp	1.0, 0
 	wrax	g, 0

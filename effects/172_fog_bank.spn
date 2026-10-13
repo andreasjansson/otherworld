@@ -59,8 +59,7 @@ equ	fhp	reg21		; left output for the limiter (DACL does not read back on the chi
 
 	skp	run, start
 	wlds	sin0, 9, 200
-	ldax	pot0
-	wrax	lens, 0			; start the Range smoother at the pot: no glide on load
+	wldr	rmp0, 0, 4096		; the echo read pointer (steered below)
 start:
 ; ---- input level for the weather: (L + R) x 0.29
 	rdax	adcl, 0.29
@@ -91,13 +90,16 @@ start:
 	ldax	pot2
 	sof	0.13, 0.8
 	wrax	gf, 0
-	ldax	pot0
-	rdfx	lens, 0.0005
-	wrax	lens, 1.0
+; ---- Range steers RMP0 (the read pointer of both echo lines): its rate is the distance to the
+;      target, so it glides there (tau 2048 samples, 62 ms, as the old smoother) and the CHO
+;      reads interpolate
+	cho	rdal, rmp0		; (ACC is 0 here) + the pointer
+	rdax	pot0, -0.488		; - the target: 3998 Pot0 samples
+	sof	1.99, 0
+	wrax	rmp0_rate, 0
 ; ---- left loop: crisp echo, then three variable allpasses, damping, gain
-	sof	0.122, 0.113
-	wrax	addr_ptr, 0
-	rmpa	1.0
+	cho	rda, rmp0, reg|compc, dl+3712
+	cho	rda, rmp0, 0, dl+3713
 	wrax	el, 1.0
 	wra	a1x, 1.0
 	rda	a2x+331, -1.0		; y1[n-331], stored in a2x (it holds y1 anyway)
@@ -122,10 +124,8 @@ start:
 	rdax	adcr, 0.29
 	wra	dr, 0			; ping-pong: the left echo feeds the right line
 ; ---- right loop
-	ldax	lens
-	sof	0.122, 0.3723
-	wrax	addr_ptr, 0
-	rmpa	1.0
+	cho	rda, rmp0, reg|compc, dr+4091
+	cho	rda, rmp0, 0, dr+4092
 	wrax	er, 1.0
 	wra	b1x, 1.0
 	rda	b2x+373, -1.0		; y1[n-373], stored in b2x
